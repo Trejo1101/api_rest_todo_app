@@ -12,7 +12,7 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ message: 'Invalid data' })
     }
     
-    const salt = await bcrypt.getSalt(10)
+    const salt = await bcrypt.genSalt(10)
     const hashed_password = await bcrypt.hash(user_password, salt)
 
     try{
@@ -25,13 +25,17 @@ router.post('/register', async (req, res) => {
 
 router.post('/login', async (req, res) => {
     const { email, user_password } = req.body
-    const user = await User.findOne({ where: { email } })
+    const user = await User.findOne({ where: { email, is_active: true } })
+
+    if (user == null) {
+        return res.status(400).json({ message: 'Invalid credentials' })
+    }
 
     if (!email || !(await bcrypt.compare(user_password, user.user_password))){
         return res.status(401).json({ message: 'Invalid credentials' })
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '15m' })
+    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' })
     res.json({ token })
 })
 
